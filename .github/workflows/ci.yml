@@ -55,6 +55,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libgl1 libglib2.0-0 ffmpeg
+        # Note: libgl1-mesa-glx was renamed to libgl1 in Debian trixie / Ubuntu 24.04.
 
       - name: Install backend dependencies
         working-directory: backend
