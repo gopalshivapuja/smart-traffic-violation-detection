@@ -16,30 +16,33 @@ branch_labels = None
 depends_on = None
 
 
-violation_type = sa.Enum(
+_VTYPES = (
     "helmet_violation",
     "signal_jump",
     "wrong_way",
     "speeding",
     "no_seatbelt",
     "illegal_parking",
-    name="violationtype",
 )
-
-violation_status = sa.Enum(
+_VSTATUS = (
     "detected",
     "confirmed",
     "rejected",
     "evidence_generated",
     "sent_to_authority",
-    name="violationstatus",
 )
 
 
+def _enum_sql(name: str, values: tuple[str, ...]) -> str:
+    quoted = ", ".join(f"'{v}'" for v in values)
+    return f"CREATE TYPE {name} AS ENUM ({quoted})"
+
+
 def upgrade() -> None:
-    bind = op.get_bind()
-    violation_type.create(bind, checkfirst=True)
-    violation_status.create(bind, checkfirst=True)
+    # Create the enum types explicitly first; column references below use
+    # create_type=False so they don't try to create them again.
+    op.execute(_enum_sql("violationtype", _VTYPES))
+    op.execute(_enum_sql("violationstatus", _VSTATUS))
 
     op.create_table(
         "cameras",
@@ -59,8 +62,18 @@ def upgrade() -> None:
         "violations",
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column("camera_id", sa.String(100), nullable=False, index=True),
-        sa.Column("violation_type", violation_type, nullable=False, index=True),
-        sa.Column("status", violation_status, server_default="detected", index=True),
+        sa.Column(
+            "violation_type",
+            postgresql.ENUM(*_VTYPES, name="violationtype", create_type=False),
+            nullable=False,
+            index=True,
+        ),
+        sa.Column(
+            "status",
+            postgresql.ENUM(*_VSTATUS, name="violationstatus", create_type=False),
+            server_default="detected",
+            index=True,
+        ),
         sa.Column("license_plate", sa.String(20), index=True),
         sa.Column("confidence", sa.Float(), nullable=False),
         sa.Column("fine_amount", sa.Float(), server_default="0.0"),
@@ -78,6 +91,5 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_table("violations")
     op.drop_table("cameras")
-    bind = op.get_bind()
-    violation_status.drop(bind, checkfirst=True)
-    violation_type.drop(bind, checkfirst=True)
+    op.execute("DROP TYPE IF EXISTS violationstatus")
+    op.execute("DROP TYPE IF EXISTS violationtype")

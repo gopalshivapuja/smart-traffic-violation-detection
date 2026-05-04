@@ -8,6 +8,7 @@ sqlalchemy==2.0.36
 alembic==1.14.1
 asyncpg==0.30.0
 psycopg2-binary==2.9.10
+greenlet==3.5.0  # required by sqlalchemy[asyncio] on Python 3.12+
 
 # Task queue
 celery[redis]==5.4.0
@@ -16,11 +17,11 @@ redis==5.2.1
 # ML / Detection
 ultralytics==8.3.52
 opencv-python-headless==4.10.0.84
-numpy==2.2.1
+numpy<2.0.0  # ultralytics on darwin requires <2; loosened from 2.2.1 pin
 
 # OCR
 paddleocr==2.9.1
-paddlepaddle==3.0.0b1
+paddlepaddle==3.0.0
 
 # Tracking
 supervision==0.25.1
