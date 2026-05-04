@@ -136,3 +136,30 @@ jobs:
           build-args: VITE_API_BASE_URL=https://example.com/api/v1
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
+
+  deploy:
+    name: Deploy to Railway (feat branch only)
+    runs-on: ubuntu-latest
+    # Gate: only deploy from this branch, only on direct push (not PR), only after the
+    # backend / frontend / docker-build jobs all pass. Add `main` later if you want.
+    if: github.ref == 'refs/heads/feat/capstone-build-out' && github.event_name == 'push'
+    needs: [backend, frontend, docker-build]
+    concurrency:
+      # Serialize deploys per branch so two pushes don't race.
+      group: railway-deploy-${{ github.ref }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli@4
+
+      - name: Deploy backend
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: railway up --service backend --ci
+
+      - name: Deploy frontend
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: railway up --service frontend --ci
