@@ -157,9 +157,11 @@ jobs:
       - name: Deploy backend
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway up --service backend --ci
+        # --detach uploads + queues the build, returns cleanly. Avoids the flaky
+        # "Failed to stream build logs" we saw with --ci that exits 1 mid-build.
+        run: railway up --service backend --detach
 
       - name: Deploy frontend
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway up --service frontend --ci
+        run: railway up --service frontend --detach
