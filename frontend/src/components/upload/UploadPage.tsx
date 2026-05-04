@@ -80,8 +80,8 @@ export default function UploadPage() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900">Upload Video</h2>
-      <p className="text-gray-600">
+      <h2 className="text-2xl font-semibold text-slate-100">Upload Video</h2>
+      <p className="text-slate-400">
         Upload a traffic video for automated violation detection. Supported formats: MP4, AVI, MOV, MKV, WebM.
       </p>
 
@@ -89,10 +89,10 @@ export default function UploadPage() {
       <div
         className={`relative rounded-lg border-2 border-dashed p-12 text-center transition-colors ${
           dragActive
-            ? 'border-blue-500 bg-blue-50'
+            ? 'border-accent-cyan bg-accent-cyan/10'
             : file
-            ? 'border-green-300 bg-green-50'
-            : 'border-gray-300 hover:border-gray-400'
+            ? 'border-ok/40 bg-ok/10'
+            : 'border-border-subtle bg-bg-elevated hover:border-slate-500'
         }`}
         onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
         onDragLeave={() => setDragActive(false)}
@@ -109,77 +109,76 @@ export default function UploadPage() {
 
         {!file ? (
           <div className="space-y-3">
-            <Upload className="mx-auto h-12 w-12 text-gray-400" />
-            <p className="text-lg font-medium text-gray-700">
+            <Upload className="mx-auto h-12 w-12 text-slate-500" />
+            <p className="text-lg font-medium text-slate-200">
               Drag and drop a video file here
             </p>
-            <p className="text-sm text-gray-500">or click to browse</p>
+            <p className="text-sm text-slate-500">or click to browse</p>
           </div>
         ) : (
           <div className="space-y-3">
-            <FileVideo className="mx-auto h-12 w-12 text-green-500" />
-            <p className="text-lg font-medium text-gray-700">{file.name}</p>
-            <p className="text-sm text-gray-500">
+            <FileVideo className="mx-auto h-12 w-12 text-ok" />
+            <p className="text-lg font-medium text-slate-200">{file.name}</p>
+            <p className="text-sm text-slate-500">
               {(file.size / (1024 * 1024)).toFixed(1)} MB
             </p>
           </div>
         )}
       </div>
 
-      {/* Error message */}
       {error && (
-        <div className="flex items-center gap-2 rounded-md bg-red-50 p-4">
-          <AlertCircle className="h-5 w-5 text-red-600" />
-          <p className="text-sm text-red-800">{error}</p>
+        <div className="flex items-center gap-2 rounded-md border border-danger/40 bg-danger/10 p-4">
+          <AlertCircle className="h-5 w-5 text-danger" />
+          <p className="text-sm text-danger">{error}</p>
         </div>
       )}
 
-      {/* Progress */}
       {state === 'processing' && progress?.meta && (
-        <div className="rounded-lg bg-white p-6 shadow">
+        <div className="rounded-lg border border-border-subtle bg-bg-elevated p-6">
           <div className="mb-4 flex items-center gap-3">
-            <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
-            <span className="font-medium text-gray-900">Processing video...</span>
+            <Loader2 className="h-5 w-5 animate-spin text-accent-cyan" />
+            <span className="font-medium text-slate-100">Processing video...</span>
           </div>
-          <div className="mb-2 h-3 overflow-hidden rounded-full bg-gray-200">
+          <div className="mb-2 h-3 overflow-hidden rounded-full bg-bg-card">
             <div
-              className="h-full rounded-full bg-blue-600 transition-all duration-500"
+              className="h-full rounded-full bg-accent-cyan transition-all duration-500"
               style={{ width: `${progress.meta.progress_pct}%` }}
             />
           </div>
-          <div className="flex justify-between text-sm text-gray-600">
-            <span>Frames: {progress.meta.frames_processed.toLocaleString()} / {progress.meta.total_frames.toLocaleString()}</span>
+          <div className="flex justify-between text-sm text-slate-400">
+            <span>
+              Frames: {progress.meta.frames_processed.toLocaleString()} /{' '}
+              {progress.meta.total_frames.toLocaleString()}
+            </span>
             <span>Violations found: {progress.meta.violations_found}</span>
           </div>
         </div>
       )}
 
-      {/* Complete */}
       {state === 'complete' && progress?.result && (
-        <div className="rounded-lg bg-green-50 p-6">
+        <div className="rounded-lg border border-ok/40 bg-ok/10 p-6">
           <div className="flex items-center gap-3">
-            <CheckCircle className="h-6 w-6 text-green-600" />
-            <span className="text-lg font-medium text-green-800">Processing complete</span>
+            <CheckCircle className="h-6 w-6 text-ok" />
+            <span className="text-lg font-medium text-ok">Processing complete</span>
           </div>
-          <div className="mt-3 space-y-1 text-sm text-green-700">
+          <div className="mt-3 space-y-1 text-sm text-slate-300">
             <p>Frames processed: {progress.result.frames_processed.toLocaleString()}</p>
             <p>Violations detected: {progress.result.violations_found}</p>
           </div>
           <a
             href="/violations"
-            className="mt-4 inline-block rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+            className="mt-4 inline-block rounded-md bg-accent-cyan px-4 py-2 text-sm font-medium text-bg hover:bg-accent-cyan/90"
           >
             View Violations
           </a>
         </div>
       )}
 
-      {/* Actions */}
       <div className="flex gap-3">
         {state === 'idle' && file && (
           <button
             onClick={handleUpload}
-            className="rounded-md bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            className="rounded-md bg-accent-cyan px-6 py-2 text-sm font-medium text-bg hover:bg-accent-cyan/90"
           >
             Start Processing
           </button>
@@ -187,7 +186,7 @@ export default function UploadPage() {
         {(state === 'complete' || state === 'error') && (
           <button
             onClick={handleReset}
-            className="rounded-md bg-gray-200 px-6 py-2 text-sm font-medium text-gray-700 hover:bg-gray-300"
+            className="rounded-md border border-border-subtle px-6 py-2 text-sm font-medium text-slate-300 hover:bg-white/5"
           >
             Upload Another
           </button>

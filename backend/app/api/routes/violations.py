@@ -93,6 +93,37 @@ async def get_stats(db: AsyncSession = Depends(get_db)):
     )
 
 
+@router.get("/stats/peak-hours")
+async def peak_hours(
+    days: int = 7, db: AsyncSession = Depends(get_db)
+) -> list[dict]:
+    """Return per-hour-of-day counts over the last `days` days for the line chart."""
+    since = datetime.utcnow() - timedelta(days=days)
+    rows = await db.execute(
+        select(
+            func.extract("hour", Violation.detected_at).label("hour"),
+            func.count(Violation.id),
+        )
+        .where(Violation.detected_at >= since)
+        .group_by("hour")
+    )
+    counts = {int(h): c for h, c in rows.all()}
+    return [{"hour": h, "count": counts.get(h, 0)} for h in range(24)]
+
+
+@router.get("/stats/revenue")
+async def revenue_stats(
+    days: int = 30, db: AsyncSession = Depends(get_db)
+) -> dict:
+    """Sum fine_amount for confirmed/detected violations in the last `days` days."""
+    since = datetime.utcnow() - timedelta(days=days)
+    total = await db.scalar(
+        select(func.coalesce(func.sum(Violation.fine_amount), 0.0))
+        .where(Violation.detected_at >= since)
+    )
+    return {"days": days, "total_inr": float(total or 0.0)}
+
+
 @router.get("/{violation_id}", response_model=ViolationResponse)
 async def get_violation(violation_id: UUID, db: AsyncSession = Depends(get_db)):
     result = await db.execute(

@@ -23,23 +23,23 @@ export default function ViolationList() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h2 className="text-2xl font-bold text-gray-900">Violations</h2>
+        <h2 className="text-2xl font-semibold text-slate-100">Violations</h2>
         <div className="flex flex-wrap items-center gap-3">
           {/* Plate search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
             <input
               type="text"
               placeholder="Search plate..."
               value={plateSearch}
               onChange={(e) => setPlateSearch(e.target.value)}
-              className="rounded-md border-gray-300 pl-9 text-sm"
+              className="rounded-md border-border-subtle bg-bg-elevated pl-9 text-sm text-slate-100 placeholder-slate-500"
             />
           </div>
 
           {/* Type filter */}
           <select
-            className="rounded-md border-gray-300 text-sm"
+            className="rounded-md border-border-subtle bg-bg-elevated text-sm text-slate-100"
             value={filters.violation_type ?? ''}
             onChange={(e) =>
               setFilters((f) => ({
@@ -57,7 +57,7 @@ export default function ViolationList() {
 
           {/* Status filter */}
           <select
-            className="rounded-md border-gray-300 text-sm"
+            className="rounded-md border-border-subtle bg-bg-elevated text-sm text-slate-100"
             value={filters.status ?? ''}
             onChange={(e) =>
               setFilters((f) => ({

@@ -28,6 +28,7 @@ class ViolationResponse(BaseModel):
     status: ViolationStatus
     license_plate: str | None
     confidence: float
+    fine_amount: float | None = 0.0
     clip_url: str | None
     thumbnail_url: str | None
     evidence_package_url: str | None
@@ -50,6 +51,19 @@ class CameraCreate(BaseModel):
     name: str
     stream_url: str
     location: str | None = None
+    lat: float | None = None
+    lng: float | None = None
+    stop_line_geom: list[list[float]] | None = None
+
+
+class CameraUpdate(BaseModel):
+    name: str | None = None
+    stream_url: str | None = None
+    location: str | None = None
+    status: str | None = None
+    lat: float | None = None
+    lng: float | None = None
+    stop_line_geom: list[list[float]] | None = None
 
 
 class CameraResponse(BaseModel):
@@ -60,4 +74,8 @@ class CameraResponse(BaseModel):
     stream_url: str
     location: str | None
     status: str
+    lat: float | None = None
+    lng: float | None = None
+    stop_line_geom: list[list[float]] | None = None
+    last_frame_at: datetime | None = None
     created_at: datetime

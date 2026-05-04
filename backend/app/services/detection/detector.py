@@ -185,18 +185,15 @@ class HelmetDetector:
 
     def _detect_heuristic(self, rider_crop: np.ndarray) -> dict:
         """
-        Heuristic fallback when no helmet model is available.
+        Fail-safe fallback when no helmet model is available.
 
-        Checks the upper portion of the rider crop for head-like features.
-        This is approximate — a real deployment should use a trained model.
-
-        Returns helmet=False with moderate confidence since we can't tell
-        for certain without a dedicated model.
+        Without a trained model we cannot reliably distinguish helmet vs no-helmet,
+        so we assume helmet=True. This avoids the false-positive storm of flagging
+        every motorcycle rider as a violation. To enable real helmet detection,
+        place a YOLOv8 helmet model at HELMET_MODEL_PATH (see ml/scripts/download_helmet_model.py
+        or train one via ml/notebooks/train_helmet_detector.ipynb).
         """
-        # Without a model, we conservatively flag all motorcycle riders
-        # as potential no-helmet violations with low confidence.
-        # The rule engine's MIN_VIOLATION_FRAMES threshold will filter noise.
-        return {"helmet": False, "confidence": 0.5}
+        return {"helmet": True, "confidence": 0.0}
 
 
 def find_rider_for_motorcycle(

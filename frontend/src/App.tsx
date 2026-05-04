@@ -1,4 +1,5 @@
 import { Link, Route, Routes, useLocation } from 'react-router-dom';
+import { LayoutDashboard, ListChecks, Upload, Camera, Settings } from 'lucide-react';
 import Dashboard from './components/dashboard/Dashboard';
 import ViolationList from './components/violations/ViolationList';
 import ViolationDetail from './components/violations/ViolationDetail';
@@ -6,59 +7,69 @@ import UploadPage from './components/upload/UploadPage';
 import CameraManagement from './components/cameras/CameraManagement';
 
 const navLinks = [
-  { to: '/', label: 'Dashboard' },
-  { to: '/violations', label: 'Violations' },
-  { to: '/upload', label: 'Upload' },
-  { to: '/cameras', label: 'Cameras' },
+  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/violations', label: 'Violations', icon: ListChecks },
+  { to: '/upload', label: 'Upload', icon: Upload },
+  { to: '/cameras', label: 'Cameras', icon: Camera },
 ];
 
 export default function App() {
   const location = useLocation();
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="border-b border-gray-200 bg-white">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 justify-between">
-            <div className="flex items-center">
-              <Link to="/" className="text-xl font-bold text-gray-900">
-                Traffic Violation Detection
-              </Link>
-            </div>
-            <div className="flex items-center space-x-1">
-              {navLinks.map((link) => {
-                const active =
-                  link.to === '/'
-                    ? location.pathname === '/'
-                    : location.pathname.startsWith(link.to);
-                return (
-                  <Link
-                    key={link.to}
-                    to={link.to}
-                    className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                      active
-                        ? 'bg-gray-100 text-gray-900'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
-                  >
-                    {link.label}
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </nav>
+  const isActive = (to: string) =>
+    to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
 
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/violations" element={<ViolationList />} />
-          <Route path="/violations/:id" element={<ViolationDetail />} />
-          <Route path="/upload" element={<UploadPage />} />
-          <Route path="/cameras" element={<CameraManagement />} />
-        </Routes>
-      </main>
+  return (
+    <div className="flex min-h-screen bg-bg text-slate-100">
+      {/* Sidebar */}
+      <aside className="flex w-16 flex-col items-center border-r border-border-subtle bg-bg-elevated py-4">
+        <div className="mb-8 flex h-10 w-10 items-center justify-center rounded-lg bg-accent-cyan/10 text-accent-cyan">
+          <Camera className="h-5 w-5" />
+        </div>
+        <nav className="flex flex-1 flex-col gap-2">
+          {navLinks.map((l) => {
+            const Icon = l.icon;
+            return (
+              <Link
+                key={l.to}
+                to={l.to}
+                title={l.label}
+                className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
+                  isActive(l.to)
+                    ? 'bg-accent-cyan/15 text-accent-cyan'
+                    : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
+                }`}
+              >
+                <Icon className="h-5 w-5" />
+              </Link>
+            );
+          })}
+        </nav>
+        <button
+          title="Settings"
+          className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-400 hover:bg-white/5 hover:text-slate-200"
+        >
+          <Settings className="h-5 w-5" />
+        </button>
+      </aside>
+
+      {/* Main */}
+      <div className="flex flex-1 flex-col">
+        <header className="flex h-14 items-center justify-between border-b border-border-subtle bg-bg-elevated px-6">
+          <h1 className="text-sm font-semibold text-slate-100">
+            AI Traffic Enforcement Platform
+          </h1>
+        </header>
+        <main className="flex-1 overflow-auto p-6">
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/violations" element={<ViolationList />} />
+            <Route path="/violations/:id" element={<ViolationDetail />} />
+            <Route path="/upload" element={<UploadPage />} />
+            <Route path="/cameras" element={<CameraManagement />} />
+          </Routes>
+        </main>
+      </div>
     </div>
   );
 }

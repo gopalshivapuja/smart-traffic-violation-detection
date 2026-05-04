@@ -28,6 +28,8 @@ class TrafficRule:
     allowed_direction: Direction | None = None
     signal_zone: tuple[int, int, int, int] | None = None
     speed_limit_kmh: float | None = None
+    # Stop line for red-light rule, as [[x1,y1],[x2,y2]] in image pixels
+    stop_line: list[list[float]] | None = None
 
 
 @dataclass
@@ -179,6 +181,44 @@ class ViolationRuleEngine:
 
         if zx1 <= cx <= zx2 and zy1 <= cy <= zy2:
             self._confirmed.add(key)
+            return {
+                "violation_type": ViolationType.SIGNAL_JUMP,
+                "details": "Vehicle crossed stop line during red signal",
+            }
+        return None
+
+    def check_red_light(
+        self,
+        camera_id: str,
+        tracker_id: int,
+        prev_bbox: list[float] | None,
+        curr_bbox: list[float],
+        light_state: str,
+        frame_id: int,
+    ) -> dict | None:
+        """
+        Red-light rule: vehicle crossed the camera's stop line while light is red.
+
+        Unlike helmet (multi-frame confirmation) this is a single-event rule —
+        one line crossing while red is the violation. We dedupe by tracker_id.
+        """
+        from backend.app.services.detection.traffic_light import bbox_crossed_line
+
+        rule = self.rules.get(camera_id)
+        if not rule or not rule.stop_line or prev_bbox is None:
+            return None
+        if light_state != "red":
+            return None
+
+        key = (tracker_id, ViolationType.SIGNAL_JUMP.value)
+        if key in self._confirmed:
+            return None
+
+        if bbox_crossed_line(prev_bbox, curr_bbox, rule.stop_line):
+            self._confirmed.add(key)
+            logger.info(
+                f"Red-light violation CONFIRMED for track {tracker_id} at frame {frame_id}"
+            )
             return {
                 "violation_type": ViolationType.SIGNAL_JUMP,
                 "details": "Vehicle crossed stop line during red signal",

@@ -7,16 +7,16 @@ interface ViolationTableProps {
 }
 
 const statusColors: Record<string, string> = {
-  detected: 'bg-yellow-100 text-yellow-800',
-  confirmed: 'bg-blue-100 text-blue-800',
-  rejected: 'bg-gray-100 text-gray-800',
-  evidence_generated: 'bg-green-100 text-green-800',
-  sent_to_authority: 'bg-purple-100 text-purple-800',
+  detected: 'bg-warning/15 text-warning',
+  confirmed: 'bg-accent-cyan/15 text-accent-cyan',
+  rejected: 'bg-slate-700/40 text-slate-400',
+  evidence_generated: 'bg-ok/15 text-ok',
+  sent_to_authority: 'bg-purple-500/15 text-purple-300',
 };
 
 const typeLabels: Record<string, string> = {
   helmet_violation: 'No Helmet',
-  signal_jump: 'Signal Jump',
+  signal_jump: 'Red Light',
   wrong_way: 'Wrong Way',
   speeding: 'Speeding',
   no_seatbelt: 'No Seatbelt',
@@ -28,57 +28,49 @@ export default function ViolationTable({
   onSelect,
 }: ViolationTableProps) {
   return (
-    <div className="overflow-hidden rounded-lg bg-white shadow">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+    <div className="overflow-hidden rounded-lg border border-border-subtle bg-bg-elevated">
+      <table className="min-w-full divide-y divide-border-subtle">
+        <thead className="bg-bg-card">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-              Type
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-              Camera
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-              Plate
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-              Confidence
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-              Status
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-              Detected
-            </th>
+            {['Type', 'Camera', 'Plate', 'Confidence', 'Status', 'Detected'].map((h) => (
+              <th
+                key={h}
+                className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500"
+              >
+                {h}
+              </th>
+            ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-200 bg-white">
+        <tbody className="divide-y divide-border-subtle">
           {violations.map((v) => (
             <tr
               key={v.id}
               onClick={() => onSelect(v)}
-              className="cursor-pointer hover:bg-gray-50"
+              className="cursor-pointer transition-colors hover:bg-white/5"
             >
-              <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
+              <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-slate-100">
                 {typeLabels[v.violation_type] ?? v.violation_type}
               </td>
-              <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+              <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-400">
                 {v.camera_id}
               </td>
-              <td className="whitespace-nowrap px-6 py-4 text-sm font-mono text-gray-900">
+              <td className="whitespace-nowrap px-6 py-4 font-mono text-sm text-slate-100">
                 {v.license_plate ?? '—'}
               </td>
-              <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+              <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-400">
                 {(v.confidence * 100).toFixed(1)}%
               </td>
               <td className="whitespace-nowrap px-6 py-4">
                 <span
-                  className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${statusColors[v.status] ?? ''}`}
+                  className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
+                    statusColors[v.status] ?? ''
+                  }`}
                 >
                   {v.status.replace(/_/g, ' ')}
                 </span>
               </td>
-              <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+              <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-400">
                 {format(new Date(v.detected_at), 'MMM d, yyyy HH:mm')}
               </td>
             </tr>
@@ -87,7 +79,7 @@ export default function ViolationTable({
             <tr>
               <td
                 colSpan={6}
-                className="px-6 py-12 text-center text-sm text-gray-500"
+                className="px-6 py-12 text-center text-sm text-slate-500"
               >
                 No violations found
               </td>

@@ -3,12 +3,17 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+from backend.app.core.config import settings
 from backend.app.core.database import Base
 from backend.app.models.violation import Violation, Camera  # noqa: F401
 
 config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+
+# Override sqlalchemy.url with the env-driven sync URL so the same migration
+# works locally and on Railway.
+config.set_main_option("sqlalchemy.url", settings.DATABASE_URL_SYNC)
 
 target_metadata = Base.metadata
 

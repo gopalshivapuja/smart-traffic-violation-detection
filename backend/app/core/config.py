@@ -12,6 +12,14 @@ class Settings(BaseSettings):
 
     APP_NAME: str = "Smart Traffic Violation Detection"
     DEBUG: bool = False
+    ENVIRONMENT: str = "development"  # development | production
+
+    # CORS — comma-separated list of allowed origins. In production set to your frontend URL(s).
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
+
+    # Media root — single dir all storage subpaths live under (used in production / Railway volume).
+    # Leave empty to use the per-subdir defaults below.
+    MEDIA_ROOT: str = ""
 
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/traffic_violations"
@@ -66,5 +74,19 @@ class Settings(BaseSettings):
         for d in [self.UPLOAD_DIR, self.CLIPS_DIR, self.THUMBNAILS_DIR, self.EVIDENCE_DIR]:
             os.makedirs(d, exist_ok=True)
 
+    @property
+    def cors_origins_list(self) -> list[str]:
+        return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
+
 
 settings = Settings()
+
+# If MEDIA_ROOT is set (e.g. /data on Railway), repoint storage subdirs under it.
+if settings.MEDIA_ROOT:
+    root = settings.MEDIA_ROOT.rstrip("/")
+    settings.UPLOAD_DIR = f"{root}/uploads"
+    settings.CLIPS_DIR = f"{root}/clips"
+    settings.THUMBNAILS_DIR = f"{root}/thumbnails"
+    settings.EVIDENCE_DIR = f"{root}/evidence"
+    settings.HELMET_MODEL_PATH = f"{root}/models/helmet_detector.pt"
+    settings.DETECTION_MODEL_PATH = f"{root}/models/yolov8n.pt"

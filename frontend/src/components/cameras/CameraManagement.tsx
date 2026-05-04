@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Camera, Plus, Trash2, Play, Video } from 'lucide-react';
-import { getCameras, createCamera, deleteCamera, startStreamProcessing } from '../../services/api';
+import {
+  getCameras,
+  createCamera,
+  deleteCamera,
+  startStreamProcessing,
+} from '../../services/api';
 import type { Camera as CameraType } from '../../types/violation';
 
 export default function CameraManagement() {
@@ -10,11 +15,12 @@ export default function CameraManagement() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Form state
   const [formId, setFormId] = useState('');
   const [formName, setFormName] = useState('');
   const [formUrl, setFormUrl] = useState('');
   const [formLocation, setFormLocation] = useState('');
+  const [formLat, setFormLat] = useState('');
+  const [formLng, setFormLng] = useState('');
 
   const fetchCameras = useCallback(async () => {
     try {
@@ -40,13 +46,17 @@ export default function CameraManagement() {
         name: formName,
         stream_url: formUrl,
         location: formLocation || undefined,
+        lat: formLat ? parseFloat(formLat) : undefined,
+        lng: formLng ? parseFloat(formLng) : undefined,
       });
       setShowForm(false);
       setFormId('');
       setFormName('');
       setFormUrl('');
       setFormLocation('');
-      setSuccess('Camera added successfully');
+      setFormLat('');
+      setFormLng('');
+      setSuccess('Camera added');
       fetchCameras();
       setTimeout(() => setSuccess(null), 3000);
     } catch (e: any) {
@@ -55,21 +65,21 @@ export default function CameraManagement() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this camera?')) return;
+    if (!confirm('Delete this camera?')) return;
     try {
       await deleteCamera(id);
       setSuccess('Camera deleted');
       fetchCameras();
       setTimeout(() => setSuccess(null), 3000);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to delete camera');
+      setError(e instanceof Error ? e.message : 'Failed to delete');
     }
   };
 
   const handleStartProcessing = async (cameraId: string) => {
     try {
       const result = await startStreamProcessing(cameraId);
-      setSuccess(`${result.message} (Task: ${result.task_id.slice(0, 8)}...)`);
+      setSuccess(`${result.message} (Task: ${result.task_id.slice(0, 8)}…)`);
       setTimeout(() => setSuccess(null), 5000);
     } catch (e: any) {
       setError(e.response?.data?.detail || 'Failed to start processing');
@@ -77,88 +87,121 @@ export default function CameraManagement() {
   };
 
   if (loading) {
-    return <div className="flex h-64 items-center justify-center"><p className="text-gray-500">Loading cameras...</p></div>;
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <p className="text-slate-500">Loading cameras...</p>
+      </div>
+    );
   }
+
+  const inputCls =
+    'mt-1 block w-full rounded-md border-border-subtle bg-bg-card text-sm text-slate-100 placeholder-slate-500 focus:border-accent-cyan focus:ring-accent-cyan';
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">Cameras</h2>
+        <h2 className="text-2xl font-semibold text-slate-100">Cameras</h2>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          className="flex items-center gap-2 rounded-md bg-accent-cyan px-4 py-2 text-sm font-medium text-bg hover:bg-accent-cyan/90"
         >
           <Plus className="h-4 w-4" /> Add Camera
         </button>
       </div>
 
       {error && (
-        <div className="rounded-md bg-red-50 p-4"><p className="text-sm text-red-800">{error}</p></div>
+        <div className="rounded-md border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
+          {error}
+        </div>
       )}
       {success && (
-        <div className="rounded-md bg-green-50 p-4"><p className="text-sm text-green-800">{success}</p></div>
+        <div className="rounded-md border border-ok/40 bg-ok/10 p-4 text-sm text-ok">
+          {success}
+        </div>
       )}
 
-      {/* Add camera form */}
       {showForm && (
-        <form onSubmit={handleCreate} className="rounded-lg bg-white p-6 shadow">
-          <h3 className="mb-4 text-lg font-medium text-gray-900">Add New Camera</h3>
+        <form
+          onSubmit={handleCreate}
+          className="rounded-lg border border-border-subtle bg-bg-elevated p-6"
+        >
+          <h3 className="mb-4 text-lg font-semibold text-slate-100">Add New Camera</h3>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Camera ID</label>
+            <Field label="Camera ID">
               <input
                 type="text"
                 required
                 value={formId}
                 onChange={(e) => setFormId(e.target.value)}
                 placeholder="cam-01"
-                className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                className={inputCls}
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Name</label>
+            </Field>
+            <Field label="Name">
               <input
                 type="text"
                 required
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
                 placeholder="Main Street Camera"
-                className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                className={inputCls}
               />
+            </Field>
+            <div className="sm:col-span-2">
+              <Field label="Stream URL">
+                <input
+                  type="text"
+                  required
+                  value={formUrl}
+                  onChange={(e) => setFormUrl(e.target.value)}
+                  placeholder="rtsp://192.168.1.100:554/stream"
+                  className={inputCls}
+                />
+              </Field>
             </div>
             <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700">Stream URL</label>
-              <input
-                type="text"
-                required
-                value={formUrl}
-                onChange={(e) => setFormUrl(e.target.value)}
-                placeholder="rtsp://192.168.1.100:554/stream"
-                className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
+              <Field label="Location (optional)">
+                <input
+                  type="text"
+                  value={formLocation}
+                  onChange={(e) => setFormLocation(e.target.value)}
+                  placeholder="Hyderabad — Banjara Hills"
+                  className={inputCls}
+                />
+              </Field>
             </div>
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700">Location (optional)</label>
+            <Field label="Latitude (optional)">
               <input
-                type="text"
-                value={formLocation}
-                onChange={(e) => setFormLocation(e.target.value)}
-                placeholder="Intersection of Main St & 1st Ave"
-                className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                type="number"
+                step="any"
+                value={formLat}
+                onChange={(e) => setFormLat(e.target.value)}
+                placeholder="17.41"
+                className={inputCls}
               />
-            </div>
+            </Field>
+            <Field label="Longitude (optional)">
+              <input
+                type="number"
+                step="any"
+                value={formLng}
+                onChange={(e) => setFormLng(e.target.value)}
+                placeholder="78.45"
+                className={inputCls}
+              />
+            </Field>
           </div>
           <div className="mt-4 flex gap-3">
             <button
               type="submit"
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              className="rounded-md bg-accent-cyan px-4 py-2 text-sm font-medium text-bg hover:bg-accent-cyan/90"
             >
               Add Camera
             </button>
             <button
               type="button"
               onClick={() => setShowForm(false)}
-              className="rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-300"
+              className="rounded-md border border-border-subtle px-4 py-2 text-sm font-medium text-slate-300 hover:bg-white/5"
             >
               Cancel
             </button>
@@ -166,35 +209,49 @@ export default function CameraManagement() {
         </form>
       )}
 
-      {/* Camera list */}
       {cameras.length === 0 ? (
-        <div className="rounded-lg bg-white p-12 text-center shadow">
-          <Camera className="mx-auto h-12 w-12 text-gray-400" />
-          <p className="mt-4 text-gray-500">No cameras registered yet.</p>
-          <p className="text-sm text-gray-400">Add a camera to start monitoring traffic.</p>
+        <div className="rounded-lg border border-border-subtle bg-bg-elevated p-12 text-center">
+          <Camera className="mx-auto h-12 w-12 text-slate-600" />
+          <p className="mt-4 text-slate-400">No cameras registered yet.</p>
+          <p className="text-sm text-slate-500">Add one to start monitoring.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {cameras.map((cam) => (
-            <div key={cam.id} className="rounded-lg bg-white p-6 shadow">
+            <div
+              key={cam.id}
+              className="rounded-lg border border-border-subtle bg-bg-elevated p-6"
+            >
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`rounded-md p-2 ${cam.status === 'active' ? 'bg-green-100' : 'bg-gray-100'}`}>
-                    <Video className={`h-5 w-5 ${cam.status === 'active' ? 'text-green-600' : 'text-gray-400'}`} />
+                  <div
+                    className={`rounded-md p-2 ${
+                      cam.status === 'active' ? 'bg-ok/15' : 'bg-slate-700/40'
+                    }`}
+                  >
+                    <Video
+                      className={`h-5 w-5 ${
+                        cam.status === 'active' ? 'text-ok' : 'text-slate-500'
+                      }`}
+                    />
                   </div>
                   <div>
-                    <h4 className="font-medium text-gray-900">{cam.name}</h4>
-                    <p className="text-xs text-gray-500">{cam.id}</p>
+                    <h4 className="font-medium text-slate-100">{cam.name}</h4>
+                    <p className="text-xs text-slate-500">{cam.id}</p>
                   </div>
                 </div>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                  cam.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
-                }`}>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                    cam.status === 'active'
+                      ? 'bg-ok/15 text-ok'
+                      : 'bg-slate-700/40 text-slate-400'
+                  }`}
+                >
                   {cam.status}
                 </span>
               </div>
 
-              <div className="mt-3 space-y-1 text-sm text-gray-600">
+              <div className="mt-3 space-y-1 text-sm text-slate-400">
                 <p className="truncate" title={cam.stream_url}>
                   {cam.stream_url}
                 </p>
@@ -204,13 +261,13 @@ export default function CameraManagement() {
               <div className="mt-4 flex gap-2">
                 <button
                   onClick={() => handleStartProcessing(cam.id)}
-                  className="flex flex-1 items-center justify-center gap-1 rounded-md bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100"
+                  className="flex flex-1 items-center justify-center gap-1 rounded-md bg-accent-cyan/15 px-3 py-1.5 text-xs font-medium text-accent-cyan hover:bg-accent-cyan/25"
                 >
                   <Play className="h-3 w-3" /> Start
                 </button>
                 <button
                   onClick={() => handleDelete(cam.id)}
-                  className="flex items-center justify-center gap-1 rounded-md bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100"
+                  className="flex items-center justify-center gap-1 rounded-md bg-danger/15 px-3 py-1.5 text-xs font-medium text-danger hover:bg-danger/25"
                 >
                   <Trash2 className="h-3 w-3" />
                 </button>
@@ -219,6 +276,15 @@ export default function CameraManagement() {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-slate-300">{label}</label>
+      {children}
     </div>
   );
 }

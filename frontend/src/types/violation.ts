@@ -20,6 +20,7 @@ export interface Violation {
   status: ViolationStatus;
   license_plate: string | null;
   confidence: number;
+  fine_amount?: number;
   clip_url: string | null;
   thumbnail_url: string | null;
   evidence_package_url: string | null;
@@ -43,5 +44,28 @@ export interface Camera {
   stream_url: string;
   location: string | null;
   status: string;
+  lat?: number | null;
+  lng?: number | null;
+  stop_line_geom?: number[][] | null;
+  last_frame_at?: string | null;
   created_at: string;
+}
+
+export interface CameraHealth {
+  id: string;
+  name: string;
+  lat: number | null;
+  lng: number | null;
+  status: string;
+  last_frame_at: string | null;
+}
+
+export interface PeakHourPoint {
+  hour: number;
+  count: number;
+}
+
+export interface RevenueStats {
+  days: number;
+  total_inr: number;
 }

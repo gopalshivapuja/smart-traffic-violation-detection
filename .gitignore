@@ -16,6 +16,7 @@ node_modules/
 frontend/build/
 frontend/dist/
 .next/
+*.tsbuildinfo
 
 # ML models
 ml/models/*.pt

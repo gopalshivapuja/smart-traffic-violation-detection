@@ -1,8 +1,17 @@
 import axios from 'axios';
-import type { Camera, Violation, ViolationStats } from '../types/violation';
+import type {
+  Camera,
+  CameraHealth,
+  PeakHourPoint,
+  RevenueStats,
+  Violation,
+  ViolationStats,
+} from '../types/violation';
 
+// In dev, Vite proxies /api -> http://localhost:8000 (see vite.config.ts).
+// In prod, set VITE_API_BASE_URL to the deployed backend, e.g. https://api.example.com/api/v1
 const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
 });
 
 // --- Violations ---
@@ -36,6 +45,21 @@ export async function getViolationStats(): Promise<ViolationStats> {
   return data;
 }
 
+export async function getPeakHours(days = 7): Promise<PeakHourPoint[]> {
+  const { data } = await api.get('/violations/stats/peak-hours', { params: { days } });
+  return data;
+}
+
+export async function getRevenue(days = 30): Promise<RevenueStats> {
+  const { data } = await api.get('/violations/stats/revenue', { params: { days } });
+  return data;
+}
+
+export async function getCameraHealth(): Promise<CameraHealth[]> {
+  const { data } = await api.get('/cameras/health');
+  return data;
+}
+
 // --- Cameras ---
 
 export async function getCameras(): Promise<Camera[]> {
@@ -48,6 +72,9 @@ export async function createCamera(camera: {
   name: string;
   stream_url: string;
   location?: string;
+  lat?: number;
+  lng?: number;
+  stop_line_geom?: number[][];
 }): Promise<Camera> {
   const { data } = await api.post('/cameras/', camera);
   return data;

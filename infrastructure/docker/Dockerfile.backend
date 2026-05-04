@@ -2,8 +2,9 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
+# OpenCV runtime libs + ffmpeg (for clip extraction). Install once.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgl1-mesa-glx libglib2.0-0 && \
+    libgl1-mesa-glx libglib2.0-0 ffmpeg && \
     rm -rf /var/lib/apt/lists/*
 
 COPY backend/requirements.txt .
@@ -12,6 +13,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY backend/ backend/
 COPY ml/ ml/
 
+# Make start.sh executable
+COPY backend/start.sh ./start.sh
+RUN chmod +x /app/start.sh
+
 EXPOSE 8000
 
-CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Default to running the API. Worker service overrides this with its own command.
+CMD ["/app/start.sh"]

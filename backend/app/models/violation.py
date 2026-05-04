@@ -3,7 +3,7 @@ from datetime import datetime
 from enum import Enum as PyEnum
 
 from sqlalchemy import Column, DateTime, Enum, Float, String, Text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from backend.app.core.database import Base
 
@@ -34,6 +34,7 @@ class Violation(Base):
     status = Column(Enum(ViolationStatus), default=ViolationStatus.DETECTED, index=True)
     license_plate = Column(String(20), index=True)
     confidence = Column(Float, nullable=False)
+    fine_amount = Column(Float, default=0.0)  # rupees, used by revenue counter
     clip_url = Column(Text)
     thumbnail_url = Column(Text)
     evidence_package_url = Column(Text)
@@ -52,4 +53,9 @@ class Camera(Base):
     stream_url = Column(Text, nullable=False)
     location = Column(String(255))
     status = Column(String(50), default="active")
+    lat = Column(Float)  # for dashboard map pin
+    lng = Column(Float)
+    # Stop line as JSON [[x1,y1],[x2,y2]] in pixel coords for red-light rule
+    stop_line_geom = Column(JSONB)
+    last_frame_at = Column(DateTime)  # for camera-health view
     created_at = Column(DateTime, default=datetime.utcnow)

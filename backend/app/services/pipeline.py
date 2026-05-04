@@ -17,6 +17,7 @@ from backend.app.services.detection.detector import (
     TWO_WHEELER_CLASSES,
     find_rider_for_motorcycle,
 )
+from backend.app.services.detection.traffic_light import detect_dominant_light_state
 from backend.app.services.ocr.plate_reader import LicensePlateReader
 from backend.app.services.tracking.tracker import VehicleTracker
 from backend.app.services.violations.rule_engine import ViolationRuleEngine
@@ -54,28 +55,56 @@ class TrafficPipeline:
         self.frame_id += 1
         self._buffer_frame(frame)
 
-        # Step 1: Detect vehicles and persons
-        vehicles, persons = self.detector.detect_vehicles_and_persons(frame)
+        # Step 1: Detect everything once, then split.
+        all_detections = self.detector.detect(frame)
+        from backend.app.services.detection.detector import (
+            COCO_VEHICLE_CLASSES,
+            COCO_PERSON_CLASS,
+        )
+        vehicles = [d for d in all_detections if d["class_id"] in COCO_VEHICLE_CLASSES]
+        persons = [d for d in all_detections if d["class_id"] == COCO_PERSON_CLASS]
 
-        # Step 2: Track detected vehicles
+        # Step 2: Classify dominant traffic-light state for this frame.
+        light_state = detect_dominant_light_state(frame, all_detections)
+
+        # Step 3: Track detected vehicles
         tracked = self.tracker.update(vehicles, self.frame_id)
 
-        # Step 3: Check each tracked object for violations
+        # Step 4: Check each tracked object for violations
         violations = []
         for track in tracked:
-            violation = self._check_violations(frame, track, persons)
+            violation = self._check_violations(frame, track, persons, light_state)
             if violation:
                 violations.append(violation)
 
         return violations
 
     def _check_violations(
-        self, frame: np.ndarray, track: dict, persons: list[dict]
+        self,
+        frame: np.ndarray,
+        track: dict,
+        persons: list[dict],
+        light_state: str = "off",
     ) -> dict | None:
         """Run all violation checks for a single tracked object."""
         tracker_id = track["tracker_id"]
         class_name = track.get("class_name", self._get_class_name(track["class_id"]))
         bbox = track["bbox"]
+
+        # Red light: needs prev_bbox from track history.
+        history = self.tracker.get_track_history(tracker_id)
+        prev_bbox = history[-2]["bbox"] if len(history) >= 2 else None
+        red_light = self.rule_engine.check_red_light(
+            camera_id=self.camera_id,
+            tracker_id=tracker_id,
+            prev_bbox=prev_bbox,
+            curr_bbox=bbox,
+            light_state=light_state,
+            frame_id=self.frame_id,
+        )
+        if red_light:
+            plate = self._read_plate_safe(frame, bbox)
+            return self._build_violation_result(red_light, track, plate)
 
         # Check wrong-way driving
         direction = self.tracker.get_track_direction(tracker_id)

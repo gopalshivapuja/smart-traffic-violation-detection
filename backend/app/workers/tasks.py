@@ -14,11 +14,39 @@ import cv2
 
 from backend.app.core.config import settings
 from backend.app.core.database import SyncSessionLocal
-from backend.app.models.violation import Violation, ViolationStatus, ViolationType
+from backend.app.models.violation import Camera, Violation, ViolationStatus, ViolationType
 from backend.app.services.violations.evidence import EvidenceGenerator
 from backend.app.workers.celery_app import celery_app
 
 logger = logging.getLogger(__name__)
+
+# Indian fines (rupees) used for the dashboard revenue counter.
+FINE_SCHEDULE = {
+    ViolationType.HELMET_VIOLATION: 1000.0,
+    ViolationType.SIGNAL_JUMP: 5000.0,
+    ViolationType.WRONG_WAY: 5000.0,
+    ViolationType.SPEEDING: 2000.0,
+    ViolationType.NO_SEATBELT: 1000.0,
+    ViolationType.ILLEGAL_PARKING: 500.0,
+}
+
+
+def _load_camera_rules(camera_id: str):
+    """Build a TrafficRule from the Camera DB row (stop_line, allowed_direction)."""
+    from backend.app.services.violations.rule_engine import Direction, TrafficRule
+
+    session = SyncSessionLocal()
+    try:
+        cam = session.query(Camera).filter(Camera.id == camera_id).first()
+        if not cam:
+            return TrafficRule(camera_id=camera_id)
+        return TrafficRule(
+            camera_id=camera_id,
+            stop_line=cam.stop_line_geom if cam.stop_line_geom else None,
+            # allowed_direction stays None unless we add a column for it later.
+        )
+    finally:
+        session.close()
 
 
 @celery_app.task(bind=True, name="process_video_feed")
@@ -37,6 +65,7 @@ def process_video_feed(self, camera_id: str, stream_url: str):
     logger.info(f"Starting processing: camera={camera_id}, source={stream_url}")
 
     rule_engine = ViolationRuleEngine()
+    rule_engine.register_rule(_load_camera_rules(camera_id))
     pipeline = TrafficPipeline(camera_id, rule_engine)
     evidence_gen = EvidenceGenerator()
 
@@ -161,6 +190,7 @@ def _save_violation_to_db(
             status=ViolationStatus.DETECTED,
             license_plate=violation_data.get("license_plate"),
             confidence=float(violation_data.get("confidence", 0.0)),
+            fine_amount=FINE_SCHEDULE.get(vtype, 0.0),
             clip_url=clip_url,
             thumbnail_url=thumbnail_url,
             evidence_package_url=evidence_url,
