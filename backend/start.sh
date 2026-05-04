@@ -13,6 +13,9 @@ fi
 
 cd /app
 
+# Make backend.app.* importable for alembic env.py and uvicorn alike.
+export PYTHONPATH=/app:${PYTHONPATH:-}
+
 # Worker-only mode (kept for the dormant worker service / local dev).
 if [ "${SERVICE_TYPE:-}" = "worker" ]; then
   echo "Starting Celery worker only..."
