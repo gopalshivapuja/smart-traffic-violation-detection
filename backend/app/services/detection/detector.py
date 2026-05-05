@@ -39,18 +39,32 @@ class VehicleDetector:
         self.model: YOLO | None = None
 
     def load_model(self):
-        """Load model, auto-downloading yolov8n if path doesn't exist."""
-        path = Path(self.model_path)
-        if not path.exists():
-            logger.info(f"Model not found at {self.model_path}, downloading yolov8n.pt...")
-            # ultralytics auto-downloads when you pass a model name
-            self.model = YOLO("yolov8n.pt")
-            # Save to configured path for next time
-            path.parent.mkdir(parents=True, exist_ok=True)
-        else:
-            self.model = YOLO(str(path))
+        """Load model, auto-downloading yolov8n if path doesn't exist.
 
-        logger.info(f"Vehicle detector loaded: {self.model_path}")
+        Ultralytics' YOLO("yolov8n.pt") downloads to its own default location
+        (the current working dir or ~/.config/Ultralytics). On Railway that
+        means every container restart re-downloads. To persist on the /data
+        volume, we explicitly export the loaded weights to settings.DETECTION_MODEL_PATH
+        after the first download.
+        """
+        path = Path(self.model_path)
+        if path.exists():
+            self.model = YOLO(str(path))
+            logger.info(f"Vehicle detector loaded from {path}")
+            return
+
+        logger.info(f"Model not found at {path}, downloading yolov8n.pt...")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        self.model = YOLO("yolov8n.pt")
+        # Persist the weights so the next container start finds them.
+        try:
+            src = Path(self.model.ckpt_path) if hasattr(self.model, "ckpt_path") and self.model.ckpt_path else None
+            if src and src.is_file() and src.resolve() != path.resolve():
+                import shutil
+                shutil.copy2(src, path)
+                logger.info(f"Cached YOLOv8n weights at {path}")
+        except Exception as e:  # best-effort, don't crash inference
+            logger.warning(f"Could not persist YOLOv8n weights to {path}: {e}")
 
     def detect(self, frame: np.ndarray) -> list[dict]:
         """
