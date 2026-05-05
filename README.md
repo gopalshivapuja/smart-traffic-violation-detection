@@ -62,6 +62,18 @@ RTSP / video upload
 
 ---
 
+## Demo: one-click sample run
+
+The deployed app ships with a few Indian traffic clips at `samples/` (sourced
+from Wikimedia Commons, CC BY-SA 4.0). Pick one from the dropdown on the Upload
+page, click **Run sample**, and watch the dashboard populate.
+
+To add your own clip: drop an MP4/WebM into `samples/`, append an entry to
+`samples/manifest.json`, commit, and push — CI redeploys automatically.
+
+A `GET /api/v1/health/models` endpoint returns which models are present on
+the live `/data` volume — useful to verify the helmet model has been uploaded.
+
 ## Quick start (local dev)
 
 Prereqs: Docker Desktop, Python 3.12, Node 20+.

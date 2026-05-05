@@ -1,12 +1,17 @@
 """
 Processing API routes.
 
-Endpoints for uploading videos and starting stream processing.
+Endpoints for uploading videos, running pre-bundled samples, and starting
+stream processing.
 """
 
+import json
 import os
+import re
+import shutil
 import uuid
 from datetime import datetime
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, WebSocket
 from pydantic import BaseModel
@@ -18,6 +23,17 @@ from backend.app.core.database import get_db
 from backend.app.models.violation import Camera
 
 router = APIRouter(prefix="/process", tags=["processing"])
+
+# Sample clips bundled into the image at <repo_root>/samples/. PROJECT_ROOT
+# comes from config.py and resolves to the repo root in dev, /app in the Docker
+# image (the Dockerfile copies samples/ into /app/samples).
+from backend.app.core.config import PROJECT_ROOT
+SAMPLES_DIR = PROJECT_ROOT / "samples"
+SAMPLES_MANIFEST = SAMPLES_DIR / "manifest.json"
+
+# Filename whitelist — defends against path traversal even though we already
+# cross-check against the manifest. Allows alphanumerics, underscore, dash, dot.
+SAFE_FILENAME = re.compile(r"^[A-Za-z0-9._-]+\.(mp4|webm|mov|mkv|avi)$")
 
 
 class ProcessingResponse(BaseModel):
@@ -77,6 +93,77 @@ async def upload_video(
         filename=file.filename or filename,
         status="queued",
         message="Video uploaded and queued for processing.",
+    )
+
+
+class SampleClip(BaseModel):
+    filename: str
+    label: str
+    description: str
+    expected_violations: list[str]
+    source: str | None = None
+    source_url: str | None = None
+    duration_seconds: int | None = None
+
+
+class SampleRunRequest(BaseModel):
+    filename: str
+
+
+def _load_manifest() -> list[dict]:
+    """Read samples/manifest.json. Return [] if absent (dev without samples)."""
+    if not SAMPLES_MANIFEST.is_file():
+        return []
+    try:
+        return json.loads(SAMPLES_MANIFEST.read_text())
+    except (json.JSONDecodeError, OSError):
+        return []
+
+
+@router.get("/samples", response_model=list[SampleClip])
+async def list_samples():
+    """List bundled demo clips (read from samples/manifest.json)."""
+    manifest = _load_manifest()
+    # Keep only entries whose underlying file actually exists — defensive.
+    return [m for m in manifest if (SAMPLES_DIR / m["filename"]).is_file()]
+
+
+@router.post("/sample", response_model=UploadResponse)
+async def run_sample(request: SampleRunRequest):
+    """
+    Copy a bundled sample into the upload dir and dispatch the standard
+    process_video_feed task. Same response shape as /upload so the frontend
+    polling logic is reused.
+    """
+    if not SAFE_FILENAME.match(request.filename):
+        raise HTTPException(status_code=400, detail="Invalid filename")
+
+    manifest = _load_manifest()
+    if request.filename not in {m["filename"] for m in manifest}:
+        raise HTTPException(status_code=404, detail="Sample not in manifest")
+
+    src = SAMPLES_DIR / request.filename
+    if not src.is_file():
+        raise HTTPException(status_code=404, detail="Sample file missing")
+
+    file_id = str(uuid.uuid4())
+    ext = src.suffix or ".mp4"
+    dst_filename = f"{file_id}{ext}"
+    dst = Path(settings.UPLOAD_DIR) / dst_filename
+    os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+    shutil.copy2(src, dst)
+
+    from backend.app.workers.tasks import process_video_feed
+    task = process_video_feed.delay(
+        camera_id=f"sample-{file_id[:8]}",
+        stream_url=str(dst),
+    )
+
+    return UploadResponse(
+        task_id=task.id,
+        filename=request.filename,
+        status="queued",
+        message=f"Sample '{request.filename}' queued for processing.",
     )
 
 

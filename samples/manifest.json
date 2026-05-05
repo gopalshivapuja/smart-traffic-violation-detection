@@ -1,0 +1,38 @@
+[
+  {
+    "filename": "indian_intersection_hyderabad.mp4",
+    "label": "Hyderabad — busy intersection",
+    "description": "Dense Indian intersection with cars, buses, motorcycles. Best clip for showing the detection + tracking pipeline in action. Helmet violations only fire if helmet_detector.pt is loaded.",
+    "expected_violations": ["helmet_violation"],
+    "source": "Wikimedia Commons — File:Traffic in Hyderabad.webm (CC BY-SA 4.0)",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Traffic_in_Hyderabad.webm",
+    "duration_seconds": 12
+  },
+  {
+    "filename": "mumbai_intersection.mp4",
+    "label": "Mumbai — intersection",
+    "description": "Mumbai street intersection with mixed traffic. Vehicles, motorcycles, pedestrians. Useful for vehicle detection + plate OCR demos.",
+    "expected_violations": ["helmet_violation"],
+    "source": "Wikimedia Commons — File:Street in Mumbai (video) 03.webm (CC BY-SA 4.0)",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Street_in_Mumbai_(video)_03.webm",
+    "duration_seconds": 12
+  },
+  {
+    "filename": "mumbai_street_motorbikes.mp4",
+    "label": "Mumbai — street with motorbikes",
+    "description": "Mumbai street view dominated by two-wheelers. Stress-tests the rider/motorcycle association logic and (when the helmet model is loaded) helmet detection.",
+    "expected_violations": ["helmet_violation"],
+    "source": "Wikimedia Commons — File:Street in Mumbai (video) 01.webm (CC BY-SA 4.0)",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Street_in_Mumbai_(video)_01.webm",
+    "duration_seconds": 12
+  },
+  {
+    "filename": "mumbai_street_traffic.mp4",
+    "label": "Mumbai — street traffic",
+    "description": "General Mumbai traffic scene; good for tracking and revenue counter demos because lots of vehicles pass through.",
+    "expected_violations": ["helmet_violation"],
+    "source": "Wikimedia Commons — File:Street in Mumbai (video) 02.webm (CC BY-SA 4.0)",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Street_in_Mumbai_(video)_02.webm",
+    "duration_seconds": 12
+  }
+]

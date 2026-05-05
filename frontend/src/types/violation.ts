@@ -69,3 +69,13 @@ export interface RevenueStats {
   days: number;
   total_inr: number;
 }
+
+export interface SampleClip {
+  filename: string;
+  label: string;
+  description: string;
+  expected_violations: string[];
+  source?: string | null;
+  source_url?: string | null;
+  duration_seconds?: number | null;
+}

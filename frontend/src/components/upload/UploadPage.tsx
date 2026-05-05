@@ -1,6 +1,13 @@
-import { useCallback, useRef, useState } from 'react';
-import { Upload, FileVideo, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
-import { uploadVideo, getTaskStatus, type ProcessingStatus } from '../../services/api';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Upload, FileVideo, CheckCircle, AlertCircle, Loader2, Play } from 'lucide-react';
+import {
+  uploadVideo,
+  getTaskStatus,
+  getSamples,
+  runSample,
+  type ProcessingStatus,
+} from '../../services/api';
+import type { SampleClip } from '../../types/violation';
 
 type UploadState = 'idle' | 'uploading' | 'processing' | 'complete' | 'error';
 
@@ -12,6 +19,28 @@ export default function UploadPage() {
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const pollRef = useRef<number | null>(null);
+  const [samples, setSamples] = useState<SampleClip[]>([]);
+  const [selectedSample, setSelectedSample] = useState<string>('');
+
+  useEffect(() => {
+    getSamples().then(setSamples).catch(() => setSamples([]));
+  }, []);
+
+  const handleRunSample = async () => {
+    if (!selectedSample) return;
+    setState('uploading');
+    setError(null);
+    try {
+      const response = await runSample(selectedSample);
+      setState('processing');
+      pollStatus(response.task_id);
+    } catch (e) {
+      setState('error');
+      setError(e instanceof Error ? e.message : 'Sample run failed');
+    }
+  };
+
+  const selectedSampleMeta = samples.find((s) => s.filename === selectedSample);
 
   const handleFile = (f: File) => {
     const allowedTypes = ['video/mp4', 'video/avi', 'video/quicktime', 'video/x-matroska', 'video/webm'];
@@ -84,6 +113,48 @@ export default function UploadPage() {
       <p className="text-slate-400">
         Upload a traffic video for automated violation detection. Supported formats: MP4, AVI, MOV, MKV, WebM.
       </p>
+
+      {samples.length > 0 && state === 'idle' && (
+        <div className="rounded-lg border border-border-subtle bg-bg-elevated p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex-1">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">
+                Quick demo — pick a bundled clip
+              </label>
+              <select
+                value={selectedSample}
+                onChange={(e) => setSelectedSample(e.target.value)}
+                className="block w-full rounded-md border-border-subtle bg-bg-card text-sm text-slate-100"
+              >
+                <option value="">— choose a sample —</option>
+                {samples.map((s) => (
+                  <option key={s.filename} value={s.filename}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button
+              onClick={handleRunSample}
+              disabled={!selectedSample}
+              className="flex items-center gap-2 rounded-md bg-accent-cyan px-4 py-2 text-sm font-medium text-bg hover:bg-accent-cyan/90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Play className="h-4 w-4" /> Run sample
+            </button>
+          </div>
+          {selectedSampleMeta && (
+            <p className="mt-3 text-xs text-slate-500">{selectedSampleMeta.description}</p>
+          )}
+        </div>
+      )}
+
+      {samples.length > 0 && state === 'idle' && (
+        <div className="flex items-center gap-3 text-xs uppercase tracking-wider text-slate-500">
+          <span className="h-px flex-1 bg-border-subtle" />
+          <span>or upload your own</span>
+          <span className="h-px flex-1 bg-border-subtle" />
+        </div>
+      )}
 
       {/* Drop zone */}
       <div

@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from backend.app.api.routes import cameras, violations, processing
+from backend.app.api.routes import cameras, health, processing, violations
 from backend.app.core.config import settings
 from backend.app.core.storage import ensure_buckets
 
@@ -34,6 +34,7 @@ app.add_middleware(
 app.include_router(violations.router, prefix="/api/v1")
 app.include_router(cameras.router, prefix="/api/v1")
 app.include_router(processing.router, prefix="/api/v1")
+app.include_router(health.router, prefix="/api/v1")
 
 # Serve locally stored clips/thumbnails/evidence as static files
 if settings.STORAGE_MODE == "local":

@@ -4,6 +4,7 @@ import type {
   CameraHealth,
   PeakHourPoint,
   RevenueStats,
+  SampleClip,
   Violation,
   ViolationStats,
 } from '../types/violation';
@@ -109,6 +110,16 @@ export interface ProcessingStatus {
     camera_id: string;
   };
   error?: string;
+}
+
+export async function getSamples(): Promise<SampleClip[]> {
+  const { data } = await api.get('/process/samples');
+  return data;
+}
+
+export async function runSample(filename: string): Promise<UploadResponse> {
+  const { data } = await api.post('/process/sample', { filename });
+  return data;
 }
 
 export async function uploadVideo(file: File): Promise<UploadResponse> {
